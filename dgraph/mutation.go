@@ -7,6 +7,7 @@ import (
 	"time"
 	"log"
 	"github.com/dgraph-io/dgo/v2/protos/api"
+	//"encoding/json"
 )
 
 type Event struct {
@@ -36,6 +37,8 @@ func MuLine(p string, s1 string, s2 string) string {
 }
 
 
+
+
 func ExecMutation(m string) *api.Response{
 
 	ctx := context.Background()
@@ -58,6 +61,12 @@ func ExecMutation(m string) *api.Response{
 	return resp
 }
 
+
+
+
+
+
+
 func ExecDelMutation(m string) *api.Response{
 
 	ctx := context.Background()
@@ -67,7 +76,8 @@ func ExecDelMutation(m string) *api.Response{
 	mu := &api.Mutation{
 		DelNquads: nquads,
 		CommitNow: true,
-	}
+		
+}
 	resp, err1 := Server().Get().NewTxn().Mutate(ctx, mu)
 	if err1 != nil {
 		log.Println(err1)
@@ -82,6 +92,10 @@ func ExecDelMutation(m string) *api.Response{
 	return resp
 }
 
+
+
+
+
 func AddOrUpdateSchema(Schema string) {
 	op := &api.Operation{}
 	op.Schema = Schema 
@@ -91,4 +105,5 @@ func AddOrUpdateSchema(Schema string) {
 	}
 
 }
+
 

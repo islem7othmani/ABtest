@@ -23,6 +23,8 @@ func engine() *gin.Engine {
 	r.POST("/get-filter", data.GetFilter)
 	r.POST("/create-test", data.CreateABTest)
 	r.POST("/get-ABtest/:id", data.GetABTest)
+	r.POST("/delete-ABtest", data.DeleteABTest)
+	r.POST("/get-Tests/:id", data.GetAllTests)
 
 	return router
 }

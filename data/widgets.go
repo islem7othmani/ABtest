@@ -3,21 +3,21 @@ package data
 import (
 	"fmt"
 	"net/http"
+
 	"github.com/fouita/abtesting-api/src/dgraph"
 	"github.com/gin-gonic/gin"
-	//"github.com/graphql-go/graphql"
-
 )
-//query to get data of the test
+
+// query to get data of the test
 func GetAnalytics(c *gin.Context) {
 	type WidgetElements struct {
 		id string
 	}
-	
+
 	widgetElements := WidgetElements{
 		id: c.Param("id"),
 	}
-	
+
 	q := fmt.Sprintf(`{
 		q(func: uid(%s)) {
 			uid
@@ -71,8 +71,7 @@ func GetAnalytics(c *gin.Context) {
 
 	c.JSON(http.StatusOK, res)
 }
-
-
+//get by filters
 func GetFilter(c *gin.Context) {
 
 	qF := fmt.Sprintf(`{
@@ -115,31 +114,31 @@ func GetFilter(c *gin.Context) {
 			count(uid)
 			}
 	}`)
-     
+
 	res, _ := dgraph.FetchData(qF)
 
 	c.JSON(http.StatusOK, res)
 
 }
-
-
-
+//create test
 func CreateABTest(c *gin.Context) {
 	type Test struct {
-		NameTest string `json:"nameTest,omitempty"`
-		TimeTest string `json:"timeTest,omitempty"`
+		TestAuthor     string `json:"TestAuthor,omitempty"`
+		NameTest     string `json:"nameTest,omitempty"`
+		TimeTest     string `json:"timeTest,omitempty"`
 		WidgetsTest1 string `json:"WidgetsTest1,omitempty"`
 		WidgetsTest2 string `json:"WidgetsTest2,omitempty"`
 	}
-	
+
 	var test Test
 	err := c.ShouldBindJSON(&test)
 	if err != nil {
-	  c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	  return
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
 	m := ""
+	m += dgraph.MuLine("testAuthor", "_:w", test.TestAuthor)
 	m += dgraph.MuLine("nameTest", "_:w", test.NameTest)
 	m += dgraph.MuLine("timeTest", "_:w", test.TimeTest)
 	m += dgraph.MuLine("WidgetsTest1", "_:w", test.WidgetsTest1)
@@ -148,21 +147,21 @@ func CreateABTest(c *gin.Context) {
 	resp := dgraph.ExecMutation(m)
 	c.JSON(http.StatusOK, resp)
 
-	
 }
-
+// get a test by id
 func GetABTest(c *gin.Context) {
 	type TestElements struct {
 		id string
 	}
-	
+
 	TestID := TestElements{
 		id: c.Param("id"),
 	}
-	
+
 	qAB := fmt.Sprintf(`{
 		q(func:uid(%s)){
 					uid
+					testAuthor
 					nameTest
 					timeTest
 					WidgetsTest1
@@ -178,6 +177,59 @@ func GetABTest(c *gin.Context) {
 }
 
 
+// to delete a test
+func DeleteABTest(c *gin.Context) {
+	// Define a struct to hold the data to be deleted
+	type dataToDelete struct {
+		UID      string `json:"uid,omitempty"`
+		NameTest string `json:"nameTest,omitempty"`
+	}
 
+	// Parse the request body into the struct
+	var deleteData dataToDelete
+	err := c.ShouldBindJSON(&deleteData)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
+	// Construct the mutation string using MuLine
+	m := dgraph.MuLine("nameTest", "<"+deleteData.UID+">", "*")
+	/*mut:=fmt.Sprintf(`{
+		delete {
+			%s
+		}
+	}`,m)
+	*/
+	fmt.Println(m)
+	// Execute deletion mutation
+	resp := dgraph.ExecDelMutation(m)
+	c.JSON(http.StatusOK, resp)
+}
 
+//to get all tests by one author (user)
+func GetAllTests(c *gin.Context) {
+	type widgetsByAuthor struct {
+		id string
+	}
+	ByAuthor := widgetsByAuthor{
+		id: c.Param("id"),
+	}
+	AllTests := fmt.Sprintf(`{
+		q(func: eq(testAuthor, "%s")) {
+		  uid
+		  testAuthor
+		  nameTest
+		  timeTest
+		  WidgetsTest1
+		  widgetsTest2
+		}
+	  }
+	  `,ByAuthor.id)
+
+	vars := map[string]string{"$id":ByAuthor.id}
+	res, _ := dgraph.FetchDataWithVar(AllTests, vars)
+
+	c.JSON(http.StatusOK, res)
+
+}
